@@ -4,25 +4,16 @@ library(patchwork)
 library(ggplot2)
 library(RColorBrewer) 
 
-# READ  rds if necessary
-setwd('/Users/user/Documents/上海十院/实验数据/CRC/Single_cellSeq/A&T/AT_integ/')
-A3 <- readRDS("./A3.rds")
-A2 <- readRDS("./A2.rds")
-A5 <- readRDS("./A5.rds")
-A9 <- readRDS("./A9.rds")
-A10 <- readRDS("./A10.rds")
-A11 <- readRDS("./A11.rds")
-A12 <- readRDS("./A12.rds")
-A13 <- readRDS("./A13.rds")
-T3 <- readRDS("./T3.rds")
-T2 <- readRDS("./T2.rds")
-T5 <- readRDS("./T5.rds")
-T9 <- readRDS("./T9.rds")
-T10 <- readRDS("./T10.rds")
-T11 <- readRDS("./T11.rds")
-T12 <- readRDS("./T12.rds")
-T13 <- readRDS("./T13.rds")
+setwd('./CRC/Single_cellSeq/A&T/AT_integ/')
+# preset
+# for all A and T sample 
+data <- Read10X(data.dir = "./filtered_feature_bc_matrix")
+data <- CreateSeuratObject(counts = data, project = "A2", min.cells = 3, min.features = 200)
+data[["percent.mt"]] <- PercentageFeatureSet(data, pattern = "^MT-")
+VlnPlot(data, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+data <- subset(data, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
 
+# integration
 integ <- list(A2=A2,A3=A3,A5=A5,A9=A9,A10=A10,A11=A11,A12=A12,A13=A13,
                 T2=T2,T3=T3,T5=T5,T9=T9,T10=T10,T11=T11,T12=T12,T13=T13)
 
