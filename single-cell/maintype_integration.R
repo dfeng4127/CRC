@@ -11,13 +11,12 @@ data <- Read10X(data.dir = "./filtered_feature_bc_matrix")
 data <- CreateSeuratObject(counts = data, project = "A2", min.cells = 3, min.features = 200)
 data[["percent.mt"]] <- PercentageFeatureSet(data, pattern = "^MT-")
 VlnPlot(data, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
-data <- subset(data, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+data <- subset(data, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 10)  
 
 # integration
 integ <- list(A2=A2,A3=A3,A5=A5,A9=A9,A10=A10,A11=A11,A12=A12,A13=A13,
                 T2=T2,T3=T3,T5=T5,T9=T9,T10=T10,T11=T11,T12=T12,T13=T13)
 
-# joint.bcs <- intersect(colnames(A2), colnames(A3))
 
 #  standard normalization and variable feature selection
 integ <- lapply(X = integ, FUN = function(x) {
