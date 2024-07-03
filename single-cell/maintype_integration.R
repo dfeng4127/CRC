@@ -93,5 +93,10 @@ names(new.cluster.ids) <- levels(ATmerge)
 ATmerge <- RenameIdents(ATmerge, new.cluster.ids)
 ATmerge$celltype <- Idents(ATmerge)
 
+# proportion
+cell.prop<-as.data.frame(prop.table(table(Idents(ATmerge), ATmerge$stim)))
+colnames(cell.prop)<-c("Celltype","Stim","Proportion")
+ggplot(data=cell.prop,aes(x=Stim,y=Proportion,fill= Celltype))+
+  geom_bar(stat="identity",position="fill")+ggtitle("")+theme_bw()
 DimPlot(object = ATmerge,raster = T,split.by='stim',pt.size = 2,group.by = 'celltype',label = F,cols =pal_npg('nrc')(10)) +
   RotatedAxis()+theme_test() 
