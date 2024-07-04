@@ -1,0 +1,84 @@
+setwd('./ST/monocle/')
+library(monocle)
+library(Seurat)
+library(dplyr)
+library(patchwork)
+# start monocle
+data = as(as.matrix(ST_all@assays$RNA@data), "sparseMatrix")
+pd = new("AnnotatedDataFrame", data = sc_si1@meta.data)
+fData = data.frame(gene_short_name = row.names(data), row.names = row.names(data))
+fd = new("AnnotatedDataFrame", data = fData)
+st_new = newCellDataSet(data, phenoData = pd, featureData = fd, 
+                        lowerDetectionLimit = 0.5, expressionFamily = negbinomial.size()) # or use other 
+
+# Estimate size factors and dispersions
+st_new <- estimateSizeFactors(st_new)
+st_new <- estimateDispersions(st_new)
+
+st_new <- detectGenes(st_new, min_expr = 0.1)
+print(head(fData(st_new)))
+expressed_genes <- row.names(subset(fData(st_new),
+                                    num_cells_expressed >= 10))
+
+## Constructing Single Cell Trajectories
+# choose genes
+diff_test_res <- differentialGeneTest(st_new[expressed_genes,],fullModelFormulaStr = "~seurat_clusters")
+ordering_genes <- row.names(subset(diff_test_res, qval < 0.01))
+st_new <- setOrderingFilter(st_new, ordering_genes)
+st_new <- reduceDimension(st_new, method = 'DDRTree',max_components = 2)
+st_new <- orderCells(st_new,root_state = 2)
+
+# plot
+plot_cell_trajectory(st_new,cell_size = 1,color_by = "State")+theme_bw()+
+  theme(panel.grid = element_blank())
+plot_cell_trajectory(st_new,cell_size = 1,color_by = "inter")+
+  scale_color_manual(values = c('#FFFF00','#99CCCC'))+theme_bw()+
+  theme(panel.grid = element_blank())
+
+plot_cell_trajectory(st_new,cell_size = 1,color_by = "orig.ident")+theme_bw()+
+  theme(panel.grid = element_blank())
+
+plot_cell_trajectory(st_new, color_by = "Pseudotime")+ 
+  scale_colour_distiller(palette = "OrRd",  direction = 2)+theme_bw()+
+  theme(panel.grid = element_blank())
+
+# plot_pseudotime_heatmap
+# filter mito genes
+diff_test_res2 <- dplyr::filter(diff_test_res, !grepl('RPL|RPS|MT-', gene_short_name))
+sig_gene_names <- row.names(subset(diff_test_res2,  qval < 1/10^35))
+
+plot_pseudotime_heatmap(st_new[gog$SYMBOL,],
+                        num_clusters = 4,
+                        cores =2,
+                        show_rownames =T, return_heatmap = F,
+                        hmcols=colorRampPalette(colors = c("blue", "white", "red"))(62))
+
+
+
+a_go<- go@result
+g <- unlist(strsplit(a_go$geneID[1],'/'))
+#利用bitr函数进行id转换，使用bioconductor的db系列包进行
+gog <-bitr(g,fromType="ENTREZID",toType=c("SYMBOL"),OrgDb="org.Hs.eg.db")
+
+# GO annotation preprocess
+b=plot_pseudotime_heatmap(st_new[sig_gene_names,],
+                          num_clusters = 4,
+                          cores =2,
+                          show_rownames =F, return_heatmap = T,
+                          hmcols=colorRampPalette(colors = c("blue", "white", "red"))(62))
+clusters <- cutree(b$tree_row, k = 4)
+clustering <- data.frame(clusters)
+clustering[,1] <- as.character(clustering[,1])
+colnames(clustering) <- "Gene_Clusters"
+clustering$gene<-rownames(clustering)
+
+# extract each cluster gene (col1,2,3,4)
+col4 <- clustering %>% filter(Gene_Clusters=='4')
+f <- col4$gene
+hg <-bitr(f,fromType="SYMBOL",toType=c("ENTREZID","ENSEMBL","SYMBOL"),OrgDb="org.Hs.eg.db")
+
+# GO annotation
+go <- enrichGO(hg$ENTREZID,OrgDb = org.Hs.eg.db, ont='ALL',pAdjustMethod = 'BH',pvalueCutoff = 0.05,
+               qvalueCutoff = 0.2,keyType = 'ENTREZID')
+
+
