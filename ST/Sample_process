@@ -19,9 +19,6 @@ wrap_plots(plot1, plot2)
 ST2 <- SCTransform(ST2, assay = "Spatial", verbose = FALSE)
 
 # Dimensionality reduction, clustering, and visualization
-ST2 <- NormalizeData(ST2)
-ST2 <- FindVariableFeatures(ST2, selection.method = "vst", nfeatures = 2000)
-ST2 <- ScaleData(ST2)
 ST2 <- RunPCA(ST2, assay = "SCT", verbose = FALSE)
 ST2 <- FindNeighbors(ST2, reduction = "pca", dims = 1:30)
 ST2 <- FindClusters(ST2, verbose = FALSE)
