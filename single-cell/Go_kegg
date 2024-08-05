@@ -1,0 +1,24 @@
+library(org.Hs.eg.db)
+library(clusterProfiler)
+library(dplyr) 
+library(ggplot2)
+
+f <- gene_use
+#Use the bitr function for ID conversion, employing the db series packages from Bioconductor
+hg <-bitr(f,fromType="SYMBOL",toType=c("ENTREZID","ENSEMBL","SYMBOL"),OrgDb="org.Hs.eg.db")
+
+# Perform GO enrichment analysis, determine thresholds for P values and Q values, and adjust values using the BH method.
+go <- enrichGO(hg$ENTREZID,OrgDb = org.Hs.eg.db, ont='ALL',pAdjustMethod = 'BH',pvalueCutoff = 0.05,
+               qvalueCutoff = 0.2,keyType = 'ENTREZID')
+
+# plot
+dotplot(go,showCategory=10)+scale_fill_gradient(low = "#CC0033", high = "#0099CC")
+ggsave('./go.pdf',width = 7,height = 4)
+
+#KEGG
+kegg <- enrichKEGG(hg$ENTREZID, organism = 'hsa', keyType = "kegg", pvalueCutoff = 0.05, 
+                   pAdjustMethod = 'BH', minGSSize = 3, maxGSSize = 500, qvalueCutoff = 0.2, 
+                   use_internal_data = FALSE)
+
+dotplot(kegg, showCategory=10)+scale_fill_gradient(low = "#CC0033", high = "#0099CC")
+ggsave('./kegg.pdf',width = 6,height = 2)
