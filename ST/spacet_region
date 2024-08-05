@@ -1,19 +1,1 @@
-setwd('./ST2/SpaCET/') # same for all sample
-
-library(SpaCET)
-library(ggplot2)
-visiumPath <- file.path(system.file(package = "SpaCET"), "extdata/Visium_BC")
-SpaCET_st2 <- create.SpaCET.object.10X(visiumPath = './')
-SpaCET_st2 <- SpaCET.deconvolution(SpaCET_st2, cancerType="COAD", coreNo=4)
-
-# Show key quality control metrics
-# calculate the QC metrics
-SpaCET_st2 <- SpaCET.quality.control(SpaCET_st2)
-
-# plot
-ST2@meta.data$interface <- as.character(t(SpaCET_st2@results[["CCI"]][["interface"]]))
-pdf('./if_st2.pdf')
-SpatialDimPlot(ST2, group.by = "interface",alpha = c(0.7, 1),pt.size.factor = 2)+scale_fill_manual(values = c('#FFFF00','#99CCCC','#FF6666'))
-dev.off()
-
 
