@@ -1,0 +1,38 @@
+library(dplyr)
+library(Seurat)
+library(paEpithelialhwork)
+library(ggplot2)
+library(RColorBrewer) 
+library(ggsci)
+library(CellChat)
+
+# READ  rds
+Epithelial <- readRDS("./Epithelial.rds")
+DimPlot(Epithelial,group.by = 'seurat_clusters')
+
+# Find marker
+Idents(Epithelial)<-'stim'
+DefaultAssay(Epithelial) <- 'RNA'
+markers <- FindAllMarkers(Epithelial, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top20 <- markers %>%
+  group_by(cluster) %>%
+  slice_max(n = 20, order_by = avg_log2FC)
+
+VlnPlot(Epithelial,features = 'CD8A')
+FeaturePlot(a_Epithelial,features = c('MT1H'),split.by = 'grade')
+DoHeatmap(Epithelial,features = top20$gene,group.colors = c("#CCFFFF","#FFCCCC")) + 
+  scale_fill_gradientn(colours =c("#0099CC", "white", "#CC0033"))
+ggsave('./heat.pdf',height =6,width = 6)
+
+Idents(Epithelial )<- 'stim'
+a_Epithelial<- subset(Epithelial,idents = c('A'))
+t_Epithelial<- subset(Epithelial,idents = c('T'))
+
+# StackedVlnPlot MTs gene
+Idents(a_Epithelial)<-'grade'
+pdf('./mt_a.pdf',width = 6,height = 6)
+StackedVlnPlot(a_Epithelial, mts_geneset,
+               angle.x = 45,pt.size = 0.0001,color.use =c( '#91D0BE', '#D6E7A3', '#F7F398', '#E59CC4'))
+dev.off()
+
+
