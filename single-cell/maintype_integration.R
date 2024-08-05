@@ -8,14 +8,14 @@ setwd('./CRC/Single_cellSeq/A&T/AT_integ/')
 # preset
 # for all A and T sample 
 data <- Read10X(data.dir = "./filtered_feature_bc_matrix")
-data <- CreateSeuratObject(counts = data, project = "A2", min.cells = 3, min.features = 200)
+data <- CreateSeuratObject(counts = data, project = "N1", min.cells = 3, min.features = 200)
 data[["percent.mt"]] <- PercentageFeatureSet(data, pattern = "^MT-")
 VlnPlot(data, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 data <- subset(data, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 10)  
 
 # integration
-integ <- list(A2=A2,A3=A3,A5=A5,A9=A9,A10=A10,A11=A11,A12=A12,A13=A13,
-                T2=T2,T3=T3,T5=T5,T9=T9,T10=T10,T11=T11,T12=T12,T13=T13)
+integ <- list(N1=N1,N2=N2,N3=N3,N4=N4,N5=N5,N6=N6,N7=N7,N8=N8,
+              T1=T1,T2=T2,T3=T3,T4=T4,T5=T5,T6=T6,T7=T7,T8=T8)
 
 
 #  standard normalization and variable feature selection
@@ -42,8 +42,8 @@ ATmerge <- RunUMAP(ATmerge, dims = 1:15)
 
 # add information
 Idents(ATmerge)<-'orig.ident'
-ATmerge$orig.ident <- factor(ATmerge$orig.ident,levels = c('A2','T2','A3','T3','A5','T5','A9','T9',
-                                                                 'A10','T10','A11','T11','A12','T12','A13','T13'))
+ATmerge$orig.ident <- factor(ATmerge$orig.ident,levels = c('N1','T1','N2','T2','N3','T3','N4','T4',
+                                                           'N5','T5','N6','T6','N7','T7','N8','T8'))
 new.cluster.ids <- c('NKM','NKM','NKM','NKM','NKM','NKM','KM','KM',
                      'NKM','NKM','NKM','NKM','KM','KM','KM','KM')
 names(new.cluster.ids) <- levels(ATmerge)
@@ -66,7 +66,7 @@ ATmerge <- RenameIdents(ATmerge, new.cluster.ids)
 ATmerge$stim<-Idents(ATmerge)
 
 Idents(ATmerge)<-'orig.ident'
-new.cluster.ids <- c('N2','N2','N3','N3','N5','N5','N9','N9',
+new.cluster.ids <- c('N1','N1','N2','N2','N5','N5','N9','N9',
                      'N10','N10','N11','N11','N12','N12','N13','N13')
 names(new.cluster.ids) <- levels(ATmerge)
 ATmerge <- RenameIdents(ATmerge, new.cluster.ids)
