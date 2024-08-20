@@ -1,0 +1,52 @@
+library(dplyr)
+library(Seurat)
+library(paEpithelialhwork)
+library(ggplot2)
+library(RColorBrewer) 
+library(ggsci)
+
+
+# READ  rds if necessary
+setwd(/')
+# T cell 
+Epithelial <- readRDS("/Epithelial.rds")
+DimPlot(Epithelial,group.by = 'seurat_clusters')
+
+# Find marker
+Idents(Epithelial)<-'stim'
+markers <- FindAllMarkers(Epithelial, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top20 <- markers %>%
+  group_by(cluster) %>%
+  slice_max(n = 20, order_by = avg_log2FC)
+
+DoHeatmap(Epithelial,features = top20$gene,group.colors = c("#CCFFFF","#FFCCCC")) + 
+  scale_fill_gradientn(colours =c("#0099CC", "white", "#CC0033"))
+
+Idents(Epithelial )<- 'stim'
+a_Epithelial<- subset(Epithelial,idents = c('A'))
+DimPlot(a_Epithelial,group.by = 'seurat_clusters',split.by = 'grade')
+t_Epithelial<- subset(Epithelial,idents = c('T'))
+DimPlot(t_Epithelial,group.by = 'seurat_clusters',split.by = 'grade')
+
+library(CellChat)
+Idents(a_Epithelial)<-'grade'
+com <- c('MT1E','MT1F','MT1G','MT1H','MT1M','MT1X','MT2A')
+StackedVlnPlot(a_Epithelial, com, angle.x = 45,pt.size = 0.0001,color.use =c( '#91D0BE', '#D6E7A3', '#F7F398', '#E59CC4'))
+
+VlnPlot(object = t_mer, features = com,group.by = 'grade',pt.size = -0.01)
+a_mer<- subset(merge_sub,idents = c('A'))
+Idents(a_mer) <- 'celltype'
+VlnPlot(object = a_bc, features = com,group.by = 'grade',pt.size = -0.01)
+VlnPlot(object = a_mer, features = com,group.by = 'celltype',pt.size = -0.01)
+ggsave('./mts.pdf',width = 7,height = 8)
+
+FeaturePlot(a_mer, features = c('MT1F','MT1E'),pt.size = 0.05,split.by = 'grade')
+
+StackedVlnPlot(a_mer, com,angle.x = 45,pt.size = -0.0001)
+
+a_fibro <- subset(a_mer,idents = c('Endo'))
+VlnPlot(object = a_fibro, features = com,group.by = 'grade',pt.size = -0.01)
+Idents(a_fibro) <- 'grade'
+StackedVlnPlot(a_fibro, com,angle.x = 45,pt.size = -0.0001)
+ggsave('./mts.pdf',width = 4,height = 5)
+
