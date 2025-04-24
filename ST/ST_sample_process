@@ -1,0 +1,92 @@
+library(Seurat)
+library(SeuratData)
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+library(RColorBrewer)
+# We applied the same processing pipeline to each sample
+ST2 <- Load10X_Spatial(
+  "./",
+  filename = "filtered_feature_bc_matrix.h5",
+  assay = "Spatial",
+  slice = "slice1") 
+
+plot1 <- VlnPlot(ST2, features = "nCount_Spatial", pt.size = 0.1) + NoLegend()
+plot2 <- SpatialFeaturePlot(ST2, features = "nCount_Spatial") + theme(legend.position = "right")
+wrap_plots(plot1, plot2)
+
+# sctransform
+ST2 <- SCTransform(ST2, assay = "Spatial", verbose = FALSE)
+
+# Gene expression visualization
+SpatialFeaturePlot(ST2, features = c("MUC2", "MYC"),alpha = c(0.1, 1))
+p1 <- SpatialFeaturePlot(ST2, features = "MUC2", pt.size.factor = 1)
+p2 <- SpatialFeaturePlot(ST2, features = "MYC", alpha = c(0.1, 1))
+p1 + p2
+
+# Dimensionality reduction, clustering, and visualization
+ST2 <- RunPCA(ST2, assay = "SCT", verbose = FALSE)
+ST2 <- FindNeighbors(ST2, reduction = "pca", dims = 1:30)
+ST2 <- FindClusters(ST2, verbose = FALSE)
+ST2 <- RunUMAP(ST2, reduction = "pca", dims = 1:30)
+p1 <- DimPlot(ST2, reduction = "umap", label = TRUE)
+p2 <- SpatialDimPlot(ST2, label = TRUE, label.size = 3)
+p1 + p2
+SpatialDimPlot(ST2, cells.highlight = CellsByIdentities(object = ST2, idents = c(1, 2, 3, 4)), 
+               facet.highlight = TRUE, ncol = 2)
+
+# plot alpha = c(0, 0) fig 
+SpatialFeaturePlot(ST2, features = c('NOTCH3'), pt.size.factor = 2.5,alpha = c(1, 1),image.alpha = 0)+
+  scale_fill_gradientn(colours = c("#548FCA",'white',"#D53F30"),limit=c(0,5))
+
+
+# Identification of Spatially Variable Features
+de_markers <- FindMarkers(ST2, ident.1 = 5, ident.2 = 6)
+SpatialFeaturePlot(object = ST2, features = rownames(de_markers)[1:3], alpha = c(0.1, 1), ncol = 3)
+ST2 <- FindSpatiallyVariableFeatures(ST2, assay = "SCT", features = VariableFeatures(ST2)[1:1000],
+                                       selection.method = "markvariogram")
+top.features <- head(SpatiallyVariableFeatures(ST2, selection.method = "markvariogram"), 6)
+SpatialFeaturePlot(ST2, features = top.features, ncol = 3, alpha = c(0.1, 1))
+
+
+# celltype annotation
+library(tibble)
+meta <- sc_merge@meta.data %>% filter(orig.ident=='st2') %>% select(celltype2) %>% rownames_to_column(var = "id")
+meta$id <- gsub('_1','',meta$id)
+ST2@meta.data <- left_join(ST2@meta.data,meta,by='id')
+rownames(ST2@meta.data) <- ST2$id
+
+my_cols <- c('T_Epithelial'='#e6194b',"A_Epithelial" = '#4363d8', "Plasma" = '#bfef45', "Fibroblast" = "#3cb44b",'Endothelial'='#fabed4','T_cell'='#FF1493',
+             'B_cell'="#ffe119",'Macrophage'='#42d4f4','Neutrophil'='#f58231','NKT'='#f032e6','Mast'='#911eb4')
+SpatialDimPlot(ST2, group.by = "celltype2", crop = F, alpha = c(0.8,1), pt.size.factor = 2, cols = my_cols)
+ggsave('./cell_st2.pdf')
+
+
+# infercnv annotation
+library(tibble)
+meta <- sc_merge@meta.data %>% filter(orig.ident=='st2') %>% select(cnv_score) %>% rownames_to_column(var = "id")
+meta$id <- gsub('_1','',meta$id)
+ST2@meta.data <- left_join(ST2@meta.data,meta,by='id')
+rownames(ST2@meta.data) <- ST2$id
+SpatialFeaturePlot(ST10, features = "cnv_score", crop = F, alpha = c(0.8,1), pt.size.factor =2.3, image.alpha = 0)+
+  scale_fill_gradientn(colours = c("#548FCA",'white',"#D53F30"),limits=c(0,720))
+ggsave('./plot.png')
+
+# DGF annotation
+library(tibble)
+meta <- sc_merge@meta.data %>% filter(orig.ident=='st2') %>% select(c("DGF.pos" , "DGF.neg" , "CD8T.CXCL13")) %>% rownames_to_column(var = "id")
+meta$id <- gsub('_1','',meta$id)
+ST2@meta.data <- left_join(ST2@meta.data,meta,by='id')
+rownames(ST2@meta.data) <- ST2$id
+SpatialFeaturePlot(ST2, features = "CXCL12.neg", crop = F, alpha = c(0.8,1), pt.size.factor =2.3, image.alpha = 0)+
+  scale_fill_gradientn(colours = c("#548FCA",'white',"#D53F30"),limits=c(0,1))
+ggsave('./plot.png',width = 4,height = 4)
+
+#celltype  annotation
+meta <- sc_merge@meta.data %>% filter(orig.ident=='st2') %>% select(c("Fibro.GJA4",'Fibro.FAP' , "Fibro.DES" , "CD8T.CXCL13")) %>% rownames_to_column(var = "id")
+meta$id <- gsub('_1','',meta$id)
+ST2@meta.data <- left_join(ST2@meta.data,meta,by='id')
+rownames(ST2@meta.data) <- ST2$id
+SpatialFeaturePlot(ST2, features = "Fibro.FAP", crop = F, alpha = c(0.8,1), pt.size.factor =2.3, image.alpha = 0)+
+  scale_fill_gradientn(colours = c("#548FCA",'white',"#D53F30"),limits=c(0,0.5))
+ggsave('./plot.png',width = 4,height = 4)
