@@ -1,0 +1,45 @@
+# devtools::install_github("Moonerss/CIBERSORT")
+library(tibble)
+library(scales)
+library(CIBERSORT)
+library(dplyr)
+library(Seurat)
+library(survival)
+library(survminer)
+library(matrixStats)
+library(corrplot)
+library(ggpmisc)
+library(pheatmap)
+library(ggpubr)
+load("./scRNA.RData")
+
+# expression matrix
+Idents(obj) <- 'orig.ident'
+Idents(obj) <- 'celltype'
+avg_exp_obj <- AggregateExpression(obj,  assays = "RNA", slot = "data", group.by = "celltype",  return.seurat = FALSE) 
+celltype <- avg_exp_obj$RNA  %>% as.data.frame()
+write.table(celltype,'./celltype_allgene.txt',sep = '\t')
+
+# Take the intersection of common genes
+celltype <- read.table("./celltype_all_gene.txt",header = T,sep = '\t',row.names = 1)
+combat_geo <- readRDS("./combat_com.rds")
+meta <- readRDS("./meta.rds")
+# Load all genes from the gene set
+load('./geneset.RData')
+gene_com <- intersect(allgene, rownames(combat_geo)) 
+geo_exp <- combat_geo[gene_com,]
+write.table(geo_exp,'./geo_exp.txt',sep = '\t')
+
+celltype_geo <-  celltype[gene_com,]
+write.table(celltype_geo,'./celltype_geo.txt',sep = '\t')
+
+# run CIBERSORT
+library(CIBERSORT)
+celltype_geo <- read.table("./celltype_geo.txt",header = T,sep = '\t',row.names = 1)
+geo_exp <- read.table("./geo_exp.txt",header = T,sep = '\t',row.names = 1)
+
+results <- cibersort("./celltype_geo.txt", "./geo_exp.txt")
+write.csv(results,'./results_geo.csv')
+
+      
+      
