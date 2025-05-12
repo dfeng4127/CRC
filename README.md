@@ -1,1 +1,1 @@
-# single_cell_CRC
+# Code for single-cell and spatial transcriptomics analysis
